@@ -1,0 +1,87 @@
+# 2023-11-18 14:35:24 by RouterOS 7.12
+# software id = NA18-1123
+#
+# model = RB1100AHx4
+# serial number = NA20231118NA
+/interface bridge
+add name=bridge-lan
+/interface ethernet
+set [ find default-name=ether1 ] name=ether1-wan1
+set [ find default-name=ether6 ] name=ether6-wan2
+/interface wireless security-profiles
+set [ find default=yes ] supplicant-identity=MikroTik
+/ip pool
+add name=dhcp_pool0 ranges=192.168.69.2-192.168.69.254
+/ip dhcp-server
+add address-pool=dhcp_pool0 interface=bridge-lan name=dhcp1
+/port
+set 0 name=serial0
+/routing table
+add disabled=no fib name=to-wan1
+add disabled=no fib name=to-wan2
+/interface bridge port
+add bridge=bridge-lan interface=ether2
+add bridge=bridge-lan interface=ether3
+add bridge=bridge-lan interface=ether4
+add bridge=bridge-lan interface=ether5
+add bridge=bridge-lan interface=ether7
+add bridge=bridge-lan interface=ether8
+add bridge=bridge-lan interface=ether9
+add bridge=bridge-lan interface=ether10
+add bridge=bridge-lan interface=ether11
+add bridge=bridge-lan interface=ether12
+add bridge=bridge-lan interface=ether13
+/ip address
+add address=192.168.69.1/24 interface=bridge-lan network=192.168.69.0
+/ip dhcp-client
+add add-default-route=no interface=ether1-wan1 use-peer-dns=no use-peer-ntp=\
+    no
+add add-default-route=no interface=ether6-wan2 use-peer-dns=no use-peer-ntp=\
+    no
+/ip dhcp-server network
+add address=192.168.69.0/24 dns-server=8.8.8.8,8.8.4.4 gateway=\
+    192.168.69.1
+/ip dns
+set servers=8.8.8.8,8.8.4.4
+/ip firewall mangle
+add action=accept chain=prerouting comment=Accept dst-address=192.168.10.0/24
+add action=accept chain=prerouting dst-address=192.168.20.0/24
+add action=accept chain=prerouting dst-address=192.168.69.0/24
+add action=mark-connection chain=input comment=Intput in-interface=\
+    ether1-wan1 new-connection-mark=wan1 passthrough=yes
+add action=mark-connection chain=input in-interface=ether6-wan2 \
+    new-connection-mark=wan2 passthrough=yes
+add action=mark-connection chain=prerouting comment=Mark-Connection \
+    in-interface=ether1-wan1 new-connection-mark=wan1 passthrough=yes
+add action=mark-connection chain=prerouting in-interface=ether6-wan2 \
+    new-connection-mark=wan2 passthrough=yes
+add action=mark-connection chain=prerouting comment=PCC dst-address-type=\
+    local in-interface=bridge-lan new-connection-mark=wan1 passthrough=yes \
+    per-connection-classifier=both-addresses:2/0
+add action=mark-connection chain=prerouting dst-address-type=local \
+    in-interface=bridge-lan new-connection-mark=wan2 passthrough=yes \
+    per-connection-classifier=both-addresses:2/1
+add action=mark-routing chain=output comment=Output connection-mark=wan1 \
+    new-routing-mark=to-wan1 passthrough=yes
+add action=mark-routing chain=output connection-mark=wan2 new-routing-mark=\
+    to-wan2 passthrough=yes
+add action=mark-routing chain=prerouting comment=Mark-Route connection-mark=\
+    wan1 in-interface=bridge-lan new-routing-mark=to-wan1 passthrough=yes
+add action=mark-routing chain=prerouting connection-mark=wan2 in-interface=\
+    bridge-lan new-routing-mark=to-wan2 passthrough=yes
+/ip firewall nat
+add action=masquerade chain=srcnat
+/ip route
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.10.1 \
+    routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.20.1 \
+    routing-table=main scope=30 suppress-hw-offload=no target-scope=10
+add disabled=no dst-address=0.0.0.0/0 gateway=192.168.10.1 routing-table=\
+    to-wan1 suppress-hw-offload=no
+add disabled=no dst-address=0.0.0.0/0 gateway=192.168.20.1 routing-table=\
+    to-wan2 suppress-hw-offload=no
+#error exporting "/ip/ssh" (timeout)
+/system clock
+set time-zone-name=Europe/Madrid
+/system note
+set show-at-login=no
